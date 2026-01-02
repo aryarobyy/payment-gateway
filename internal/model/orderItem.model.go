@@ -14,3 +14,13 @@ type OrderItem struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 	Products  []Product  `json:"products" gorm:"foreignKey:ProductID;constraint;OnDelete:CASCADE;" validate:"required"`
 }
+
+type UpdateOrderItem struct {
+	OrderID   *string  `json:"order_id,omitempty"`
+	ProductID *string  `json:"product_id,omitempty"`
+	Price     *float64 `json:"price,omitempty"`
+	Quantity  *int     `json:"quantity,omitempty"`
+	Subtotal  *float64 `json:"subtotal,omitempty"` // qty + price
+
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}

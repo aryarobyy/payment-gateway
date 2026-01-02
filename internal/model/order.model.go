@@ -15,3 +15,15 @@ type Order struct {
 	CreatedAt time.Time   `json:"created_at" `
 	Items     []OrderItem `json:"items" gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE;" validate:"required"`
 }
+
+type UpdateOrder struct {
+	StoreID     *string    `json:"store_id,omitempty" validate:"required"`
+	Status      *Status    `json:"status,omitempty"`
+	TableID     *string    `json:"table_id,omitempty" validate:"required"`
+	TotalAmount *int       `json:"total_amount,omitempty"`
+	ExpiredAt   *time.Time `json:"expired_at,omitempty" validate:"required"`
+	PaidAt      *time.Time `json:"paid_at,omitempty"`
+	Note        *string    `json:"note,omitempty"`
+
+	UpdatedAt time.Time `json:"updated_at"`
+}
