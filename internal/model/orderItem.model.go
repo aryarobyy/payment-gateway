@@ -12,7 +12,6 @@ type OrderItem struct {
 
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
-	Products  []Product  `json:"products" gorm:"foreignKey:ProductID;constraint;OnDelete:CASCADE;" validate:"required"`
 }
 
 type UpdateOrderItem struct {
@@ -23,4 +22,11 @@ type UpdateOrderItem struct {
 	Subtotal  *float64 `json:"subtotal,omitempty"` // qty + price
 
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+type OrderItemDTO struct {
+	ProductID string  `json:"product_id"`
+	Price     float64 `json:"price"`
+	Quantity  int     `json:"quantity"`
+	Subtotal  float64 `json:"subtotal"`
 }

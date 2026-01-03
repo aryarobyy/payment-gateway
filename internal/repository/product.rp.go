@@ -16,7 +16,8 @@ type ProductRepo interface {
 	GetByCategory(ctx context.Context, category string, limit int, offset int) ([]model.Product, int64, error)
 	GetByID(ctx context.Context, ID string) (*model.Product, error)
 	GetByActive(ctx context.Context, isActive bool, limit int, offset int) ([]model.Product, int64, error)
-	Update(ctx context.Context, m model.UpdateProduct, id string) (*model.Product, error)
+	Update(ctx context.Context, m model.UpdateProduct, ID string) (*model.Product, error)
+	GetPrice(ctx context.Context, ID string) (float64, error)
 }
 
 type productRepo struct {
@@ -170,4 +171,17 @@ func (r *productRepo) Update(ctx context.Context, m model.UpdateProduct, id stri
 	}
 
 	return &updatedData, nil
+}
+
+func (r *productRepo) GetPrice(ctx context.Context, ID string) (float64, error) {
+	var price float64
+
+	if err := r.db.WithContext(ctx).
+		Where("id = ?", ID).
+		Select("price").
+		Error; err != nil {
+		return 0.0, err
+	}
+
+	return price, nil
 }

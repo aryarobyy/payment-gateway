@@ -9,7 +9,7 @@ import (
 )
 
 type UserRepo interface {
-	// Create(ctx context.Context, m model.User) error
+	Create(ctx context.Context, m model.User) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role model.Role, limit int, offset int) ([]model.User, int64, error)
 	GetByID(ctx context.Context, ID string) (*model.User, error)
@@ -24,11 +24,11 @@ func NewUserRepo(db *gorm.DB) UserRepo {
 	return &userRepo{db: db}
 }
 
-// func (r *userRepo) Create(ctx context.Context, m model.User) error {
-// 	return r.db.WithContext(ctx).
-// 		Create(&m).
-// 		Error
-// }
+func (r *userRepo) Create(ctx context.Context, m model.User) error {
+	return r.db.WithContext(ctx).
+		Create(&m).
+		Error
+}
 
 func (r *userRepo) GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error) {
 	var (

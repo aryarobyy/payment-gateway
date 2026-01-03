@@ -5,25 +5,14 @@ import "time"
 type Order struct {
 	ID          string     `json:"id" gorm:"type:uuid;primaryKey"`
 	StoreID     string     `json:"store_id" validate:"required"`
-	Status      Status     `json:"status"`
+	Status      Status     `json:"status" validate:"required"`
 	TableID     string     `json:"table_id" validate:"required"`
-	TotalAmount int        `json:"total_amount"`
+	TotalAmount int        `json:"total_amount" validate:"required"`
 	ExpiredAt   time.Time  `json:"expired_at" validate:"required"`
 	PaidAt      *time.Time `json:"paid_at,omitempty"`
 	Note        *string    `json:"note,omitempty"`
+	TotalPrice  float64    `json:"total_price" validate:"true"`
 
-	CreatedAt time.Time   `json:"created_at" `
-	Items     []OrderItem `json:"items" gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE;" validate:"required"`
-}
-
-type UpdateOrder struct {
-	StoreID     *string    `json:"store_id,omitempty" validate:"required"`
-	Status      *Status    `json:"status,omitempty"`
-	TableID     *string    `json:"table_id,omitempty" validate:"required"`
-	TotalAmount *int       `json:"total_amount,omitempty"`
-	ExpiredAt   *time.Time `json:"expired_at,omitempty" validate:"required"`
-	PaidAt      *time.Time `json:"paid_at,omitempty"`
-	Note        *string    `json:"note,omitempty"`
-
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time      `json:"created_at" `
+	Items     []OrderItemDTO `json:"items" gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE;" validate:"required"`
 }
