@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"payment-gateway/internal/model"
@@ -12,12 +11,11 @@ import (
 
 type PaymentRepo interface {
 	Create(ctx context.Context, m model.Payment) error
-	GetMany(ctx context.Context, limit int, offset int) ([]model.Payment, int64, error)
+	GetMany(ctx context.Context, storeID string, limit int, offset int) ([]model.Payment, int64, error)
 	GetByOrderID(ctx context.Context, orderID string) (*model.Payment, error)
 	GetByProviderRef(ctx context.Context, providerRef string) (*model.Payment, error)
 	GetByStatus(ctx context.Context, status model.Status, limit int, offset int) ([]model.Payment, int64, error)
 	GetByID(ctx context.Context, ID string) (*model.Payment, error)
-	Update(ctx context.Context, m model.UpdatePayment, id string) (*model.Payment, error)
 	UpdateStatus(ctx context.Context, paymentID string, status model.Status) error
 	UpdateVerification(ctx context.Context, paymentID string, verifiedAt time.Time) error
 }
@@ -36,13 +34,14 @@ func (r *paymentRepo) Create(ctx context.Context, m model.Payment) error {
 		Error
 }
 
-func (r *paymentRepo) GetMany(ctx context.Context, limit int, offset int) ([]model.Payment, int64, error) {
+func (r *paymentRepo) GetMany(ctx context.Context, storeID string, limit int, offset int) ([]model.Payment, int64, error) {
 	var (
 		total int64
 		m     []model.Payment
 	)
 
 	query := r.db.WithContext(ctx).
+		Where("store_id = ?", storeID).
 		Model([]model.Payment{})
 
 	if err := query.
@@ -124,59 +123,6 @@ func (r *paymentRepo) GetByID(ctx context.Context, ID string) (*model.Payment, e
 	return &m, nil
 }
 
-func (r *paymentRepo) Update(ctx context.Context, m model.UpdatePayment, id string) (*model.Payment, error) {
-	updateData := map[string]interface{}{}
-
-	if m.OrderID != nil {
-		updateData["order_id"] = *m.OrderID
-	}
-	if m.TableID != nil {
-		updateData["table_id"] = *m.TableID
-	}
-	if m.Provider != nil {
-		updateData["provider"] = *m.Provider
-	}
-	if m.ProviderRef != nil {
-		updateData["provider_ref"] = *m.ProviderRef
-	}
-	if m.Amount != nil {
-		updateData["amount"] = *m.Amount
-	}
-	if m.Status != nil {
-		updateData["status"] = *m.Status
-	}
-	if m.RawPayload != nil {
-		updateData["raw_payload"] = *m.RawPayload
-	}
-	if m.VerifiedAt != nil {
-		updateData["verified_at"] = *m.VerifiedAt
-	}
-	if !m.UpdatedAt.IsZero() {
-		updateData["updated_at"] = m.UpdatedAt
-	}
-
-	if len(updateData) == 0 {
-		return nil, fmt.Errorf("no field to update")
-	}
-
-	if err := r.db.WithContext(ctx).
-		Model(&model.Payment{}).
-		Where("id = ?", id).
-		Updates(updateData).
-		Error; err != nil {
-		return nil, err
-	}
-
-	updatedData := model.Payment{}
-	if err := r.db.WithContext(ctx).
-		First(&updatedData, id).
-		Error; err != nil {
-		return nil, err
-	}
-
-	return &updatedData, nil
-}
-
 func (r *paymentRepo) UpdateStatus(ctx context.Context, paymentID string, status model.Status) error {
 	return r.db.WithContext(ctx).
 		Model(&model.Payment{}).
@@ -192,4 +138,3 @@ func (r *paymentRepo) UpdateVerification(ctx context.Context, paymentID string, 
 		Update("verified_at", verifiedAt).
 		Error
 }
-
