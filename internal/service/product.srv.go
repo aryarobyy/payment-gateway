@@ -12,12 +12,12 @@ import (
 )
 
 type ProductService interface {
-	Create(ctx context.Context, m model.Product) error
+	Create(ctx context.Context, m model.PostProduct) error
 	CreateBatch(ctx context.Context, m []model.Product) error
 	GetMany(ctx context.Context, storeID string, limit int, offset int) ([]model.Product, int64, error)
 	GetByCategory(ctx context.Context, category string, limit int, offset int) ([]model.Product, int64, error)
 	GetByID(ctx context.Context, ID string) (*model.Product, error)
-	GetByActive(ctx context.Context, isActive bool, limit int, offset int) ([]model.Product, int64, error)
+	GetByActive(ctx context.Context, isActive string, limit int, offset int) ([]model.Product, int64, error)
 	Update(ctx context.Context, m model.UpdateProduct, id string) (*model.Product, error)
 }
 
@@ -29,7 +29,7 @@ func NewProductService(repo repository.Repository) ProductService {
 	return &productService{repo: repo}
 }
 
-func (s *productService) Create(ctx context.Context, m model.Product) error {
+func (s *productService) Create(ctx context.Context, m model.PostProduct) error {
 	u := s.repo.Product()
 	m.ID = uuid.NewString()
 	if m.Price <= 0 {
@@ -43,7 +43,16 @@ func (s *productService) Create(ctx context.Context, m model.Product) error {
 		return err
 	}
 
-	if err := u.Create(ctx, m); err != nil {
+	product := model.Product{
+		ID:       uuid.NewString(),
+		StoreID:  m.StoreID,
+		Name:     m.Name,
+		Price:    m.Price,
+		IsActive: m.IsActive,
+		Category: m.Category,
+	}
+
+	if err := u.Create(ctx, product); err != nil {
 		return err
 	}
 
@@ -106,9 +115,20 @@ func (s *productService) GetByID(ctx context.Context, ID string) (*model.Product
 	return product, nil
 }
 
-func (s *productService) GetByActive(ctx context.Context, isActive bool, limit int, offset int) ([]model.Product, int64, error) {
+func (s *productService) GetByActive(ctx context.Context, isActive string, limit int, offset int) ([]model.Product, int64, error) {
 	u := s.repo.Product()
-	products, total, err := u.GetByActive(ctx, isActive, limit, offset)
+
+	var isActiveBool bool
+	switch isActive {
+	case "true", "1", "yes":
+		isActiveBool = true
+	case "false", "0", "no":
+		isActiveBool = false
+	default:
+		return nil, 0, fmt.Errorf("invalid isActive value: %s. Use true/false, 1/0, or yes/no", isActive)
+	}
+
+	products, total, err := u.GetByActive(ctx, isActiveBool, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -130,4 +150,3 @@ func (s *productService) Update(ctx context.Context, m model.UpdateProduct, id s
 
 	return product, nil
 }
-

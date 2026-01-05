@@ -3,7 +3,7 @@ package model
 import "time"
 
 type OrderItem struct {
-	ID        string  `json:"id" gorm:"type:uuid;primaryKey"`
+	ID        string  `gorm:"type:char(36);primaryKey"`
 	OrderID   string  `json:"order_id"`
 	ProductID string  `json:"product_id"`
 	Price     float64 `json:"price"`

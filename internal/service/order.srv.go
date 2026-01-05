@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"payment-gateway/internal/helper"
 	"payment-gateway/internal/model"
@@ -14,9 +15,9 @@ type OrderService interface {
 	Create(ctx context.Context, m model.Order) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.Order, int64, error)
 	GetByStoreID(ctx context.Context, storeID string, limit int, offset int) ([]model.Order, int64, error)
-	GetByStatus(ctx context.Context, status model.Status, limit int, offset int) ([]model.Order, int64, error)
+	GetByStatus(ctx context.Context, status string, limit int, offset int) ([]model.Order, int64, error)
 	GetByID(ctx context.Context, ID string) (*model.Order, error)
-	UpdateStatus(ctx context.Context, orderID string, status model.Status) error
+	UpdateStatus(ctx context.Context, orderID string, status string) error
 }
 
 type orderService struct {
@@ -82,9 +83,26 @@ func (s *orderService) GetByStoreID(ctx context.Context, storeID string, limit i
 	return orders, total, nil
 }
 
-func (s *orderService) GetByStatus(ctx context.Context, status model.Status, limit int, offset int) ([]model.Order, int64, error) {
+func (s *orderService) GetByStatus(ctx context.Context, status string, limit int, offset int) ([]model.Order, int64, error) {
 	u := s.repo.Order()
-	orders, total, err := u.GetByStatus(ctx, status, limit, offset)
+
+	var statusEnum model.Status
+	switch status {
+	case "created":
+		statusEnum = model.CREATED
+	case "pending":
+		statusEnum = model.PENDING
+	case "paid":
+		statusEnum = model.PAID
+	case "expired":
+		statusEnum = model.EXPIRED
+	case "failed":
+		statusEnum = model.FAILED
+	default:
+		return nil, 0, fmt.Errorf("invalid status: %s", status)
+	}
+
+	orders, total, err := u.GetByStatus(ctx, statusEnum, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -107,17 +125,33 @@ func (s *orderService) GetByID(ctx context.Context, ID string) (*model.Order, er
 	return order, nil
 }
 
-func (s *orderService) UpdateStatus(ctx context.Context, orderID string, status model.Status) error {
+func (s *orderService) UpdateStatus(ctx context.Context, orderID string, status string) error {
 	u := s.repo.Order()
 
 	if err := uuid.Validate(orderID); err != nil {
 		return err
 	}
 
-	if err := u.UpdateStatus(ctx, orderID, status); err != nil {
+	// Convert status string to enum
+	var statusEnum model.Status
+	switch status {
+	case "created":
+		statusEnum = model.CREATED
+	case "pending":
+		statusEnum = model.PENDING
+	case "paid":
+		statusEnum = model.PAID
+	case "expired":
+		statusEnum = model.EXPIRED
+	case "failed":
+		statusEnum = model.FAILED
+	default:
+		return fmt.Errorf("invalid status: %s", status)
+	}
+
+	if err := u.UpdateStatus(ctx, orderID, statusEnum); err != nil {
 		return err
 	}
 
 	return nil
 }
-

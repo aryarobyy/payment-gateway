@@ -9,16 +9,18 @@ import (
 	"payment-gateway/internal/helper"
 	"payment-gateway/internal/model"
 	"payment-gateway/internal/repository"
+
+	"github.com/google/uuid"
 )
 
 type PaymentService interface {
-	Create(ctx context.Context, m model.Payment, userID string) (*model.Payment, error)
+	Create(ctx context.Context, m model.PostPayment) (*model.Payment, error)
 	GetMany(ctx context.Context, storeID string, limit int, offset int) ([]model.Payment, int64, error)
 	GetByID(ctx context.Context, id string) (*model.Payment, error)
 	GetByOrderID(ctx context.Context, orderID string) (*model.Payment, error)
 	GetByProviderRef(ctx context.Context, providerRef string) (*model.Payment, error)
-	GetByStatus(ctx context.Context, status model.Status, limit int, offset int) ([]model.Payment, int64, error)
-	UpdateStatus(ctx context.Context, paymentID string, status model.Status) error
+	GetByStatus(ctx context.Context, status string, limit int, offset int) ([]model.Payment, int64, error)
+	UpdateStatus(ctx context.Context, paymentID string, status string) error
 	UpdateVerification(ctx context.Context, paymentID string, verifiedAt time.Time) error
 }
 
@@ -30,7 +32,7 @@ func NewPaymentService(repo repository.Repository) PaymentService {
 	return &paymentService{repo: repo}
 }
 
-func (s *paymentService) Create(ctx context.Context, m model.Payment, userID string) (*model.Payment, error) {
+func (s *paymentService) Create(ctx context.Context, m model.PostPayment) (*model.Payment, error) {
 	u := s.repo.Payment()
 
 	if err := helper.EmptyCheck(map[string]string{
@@ -49,11 +51,22 @@ func (s *paymentService) Create(ctx context.Context, m model.Payment, userID str
 		m.Status = model.PENDING
 	}
 
-	if err := u.Create(ctx, m); err != nil {
+	payment := model.Payment{
+		ID:          uuid.NewString(),
+		OrderID:     m.OrderID,
+		TableID:     m.TableID,
+		Provider:    m.Provider,
+		ProviderRef: m.ProviderRef,
+		Amount:      m.Amount,
+		Status:      m.Status,
+		RawPayload:  m.RawPayload,
+	}
+
+	if err := u.Create(ctx, payment); err != nil {
 		return nil, fmt.Errorf("failed to create payment: %w", err)
 	}
 
-	return &m, nil
+	return &payment, nil
 }
 
 func (s *paymentService) GetMany(ctx context.Context, storeID string, limit int, offset int) ([]model.Payment, int64, error) {
@@ -116,14 +129,27 @@ func (s *paymentService) GetByProviderRef(ctx context.Context, providerRef strin
 	return payment, nil
 }
 
-func (s *paymentService) GetByStatus(ctx context.Context, status model.Status, limit int, offset int) ([]model.Payment, int64, error) {
+func (s *paymentService) GetByStatus(ctx context.Context, status string, limit int, offset int) ([]model.Payment, int64, error) {
 	u := s.repo.Payment()
-	payments, total, err := u.GetByStatus(ctx, status, limit, offset)
 
-	if status == "" {
-		return nil, 0, fmt.Errorf("store id is empty")
+	// Convert status string to enum
+	var statusEnum model.Status
+	switch status {
+	case "created":
+		statusEnum = model.CREATED
+	case "pending":
+		statusEnum = model.PENDING
+	case "paid":
+		statusEnum = model.PAID
+	case "expired":
+		statusEnum = model.EXPIRED
+	case "failed":
+		statusEnum = model.FAILED
+	default:
+		return nil, 0, fmt.Errorf("invalid status: %s", status)
 	}
 
+	payments, total, err := u.GetByStatus(ctx, statusEnum, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get payments by status: %w", err)
 	}
@@ -131,18 +157,31 @@ func (s *paymentService) GetByStatus(ctx context.Context, status model.Status, l
 	return payments, total, nil
 }
 
-func (s *paymentService) UpdateStatus(ctx context.Context, paymentID string, status model.Status) error {
+func (s *paymentService) UpdateStatus(ctx context.Context, paymentID string, status string) error {
 	u := s.repo.Payment()
 
 	if paymentID == "" {
-		return fmt.Errorf("store id is empty")
+		return fmt.Errorf("payment id is empty")
 	}
 
-	if status != model.CREATED && status != model.EXPIRED && status != model.FAILED && status != model.PAID && status != model.PENDING {
-		return fmt.Errorf("invalid status")
+	// Convert status string to enum
+	var statusEnum model.Status
+	switch status {
+	case "created":
+		statusEnum = model.CREATED
+	case "pending":
+		statusEnum = model.PENDING
+	case "paid":
+		statusEnum = model.PAID
+	case "expired":
+		statusEnum = model.EXPIRED
+	case "failed":
+		statusEnum = model.FAILED
+	default:
+		return fmt.Errorf("invalid status: %s", status)
 	}
 
-	if err := u.UpdateStatus(ctx, paymentID, status); err != nil {
+	if err := u.UpdateStatus(ctx, paymentID, statusEnum); err != nil {
 		return fmt.Errorf("failed to update payment status: %w", err)
 	}
 

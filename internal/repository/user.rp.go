@@ -13,6 +13,7 @@ type UserRepo interface {
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role model.Role, limit int, offset int) ([]model.User, int64, error)
 	GetByID(ctx context.Context, ID string) (*model.User, error)
+	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 }
 
@@ -94,10 +95,25 @@ func (r *userRepo) GetByRole(ctx context.Context, role model.Role, limit int, of
 	return m, total, nil
 }
 
+func (r *userRepo) GetByEmail(ctx context.Context, email string) (*model.User, error) {
+	m := model.User{}
+	query := r.db.WithContext(ctx).
+		Model(model.User{}).
+		Where("email = ?", email)
+
+	if err := query.
+		First(&m, email).
+		Error; err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+
 func (r *userRepo) GetByUsername(ctx context.Context, username string) (*model.User, error) {
 	m := model.User{}
 	query := r.db.WithContext(ctx).
-		Model([]model.User{}).
+		Model(model.User{}).
 		Where("username = ?", username)
 
 	if err := query.
