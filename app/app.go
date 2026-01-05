@@ -7,6 +7,12 @@ import (
 	"strconv"
 	"time"
 
+	"payment-gateway/internal/controller"
+	"payment-gateway/internal/model"
+	"payment-gateway/internal/repository"
+	"payment-gateway/internal/routes"
+	"payment-gateway/internal/service"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -22,13 +28,21 @@ var databaseInstance *gorm.DB
 func NewApp() *App {
 	router := gin.Default()
 
+	db := InitDb()
+	repo := repository.NewRepository(db)
+	srv := service.NewService(repo)
+	ctrl := controller.NewContoller(srv)
+
+	setupRoutes(router, ctrl)
+
 	return &App{
 		Router: router,
 	}
 }
 
 func InitDb() *gorm.DB {
-	databaseInstance, err := connectDb()
+	var err error
+	databaseInstance, err = connectDb()
 	if err != nil {
 		log.Fatalf("Could not connect to the database: %v", err)
 	}
@@ -80,11 +94,30 @@ func connectDb() (*gorm.DB, error) {
 }
 
 func performMigration() error {
-	err := databaseInstance.AutoMigrate()
+	err := databaseInstance.AutoMigrate(
+		&model.User{},
+		&model.Store{},
+		&model.Product{},
+		&model.Payment{},
+		&model.Order{},
+		&model.OrderItem{},
+	)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func setupRoutes(router *gin.Engine, ctrl controller.Controller) {
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"data": "Hello world"})
+	})
+
+	routes.UserRoutes(router, ctrl)
+	routes.ProductRoutes(router, ctrl)
+	routes.OrderRoutes(router, ctrl)
+	routes.OrderItemRoutes(router, ctrl)
+	routes.PaymentRoutes(router, ctrl)
 }
 
 func (a *App) Run(addr string) error {
