@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"payment-gateway/internal/controller"
@@ -13,6 +14,7 @@ import (
 	"payment-gateway/internal/routes"
 	"payment-gateway/internal/service"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -27,6 +29,17 @@ var databaseInstance *gorm.DB
 
 func NewApp() *App {
 	router := gin.Default()
+
+	origins := strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
+	corsConfig := cors.Config{
+		AllowOrigins:     origins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}
+	router.Use(cors.New(corsConfig))
 
 	db := InitDb()
 	repo := repository.NewRepository(db)
@@ -121,5 +134,5 @@ func setupRoutes(router *gin.Engine, ctrl controller.Controller) {
 }
 
 func (a *App) Run(addr string) error {
-	return a.Router.Run(addr)
+	return a.Router.RunTLS(addr, "cert.pem", "key.pem")
 }
