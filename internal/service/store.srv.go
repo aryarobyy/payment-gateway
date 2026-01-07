@@ -27,15 +27,15 @@ func NewStoreService(repo repository.Repository) StoreService {
 }
 
 func (s *storeService) Create(ctx context.Context, m model.Store) error {
-	u := s.repo.Store()
-	uR := s.repo.User()
+	storeRepo := s.repo.Store()
+	userRepo := s.repo.User()
 	m.ID = uuid.NewString()
 
-	if _, err := uR.GetByID(ctx, m.OwnerID); err != nil {
+	if _, err := userRepo.GetByID(ctx, m.OwnerID); err != nil {
 		return err
 	}
 
-	if err := u.Create(ctx, m); err != nil {
+	if err := storeRepo.Create(ctx, m); err != nil {
 		return err
 	}
 
@@ -43,8 +43,8 @@ func (s *storeService) Create(ctx context.Context, m model.Store) error {
 }
 
 func (s *storeService) GetMany(ctx context.Context, limit int, offset int) ([]model.Store, int64, error) {
-	u := s.repo.Store()
-	stores, total, err := u.GetMany(ctx, limit, offset)
+	storeRepo := s.repo.Store()
+	stores, total, err := storeRepo.GetMany(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -53,8 +53,8 @@ func (s *storeService) GetMany(ctx context.Context, limit int, offset int) ([]mo
 }
 
 func (s *storeService) GetByOwnerID(ctx context.Context, ownerID string, limit int, offset int) ([]model.Store, int64, error) {
-	u := s.repo.Store()
-	stores, total, err := u.GetByOwnerID(ctx, ownerID, limit, offset)
+	storeRepo := s.repo.Store()
+	stores, total, err := storeRepo.GetByOwnerID(ctx, ownerID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -63,8 +63,8 @@ func (s *storeService) GetByOwnerID(ctx context.Context, ownerID string, limit i
 }
 
 func (s *storeService) GetByIsActive(ctx context.Context, isActive bool, limit int, offset int) ([]model.Store, int64, error) {
-	u := s.repo.Store()
-	stores, total, err := u.GetByIsActive(ctx, isActive, limit, offset)
+	storeRepo := s.repo.Store()
+	stores, total, err := storeRepo.GetByIsActive(ctx, isActive, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -73,13 +73,13 @@ func (s *storeService) GetByIsActive(ctx context.Context, isActive bool, limit i
 }
 
 func (s *storeService) GetByID(ctx context.Context, ID string) (*model.Store, error) {
-	u := s.repo.Store()
+	storeRepo := s.repo.Store()
 
 	if err := uuid.Validate(ID); err != nil {
 		return nil, err
 	}
 
-	store, err := u.GetByID(ctx, ID)
+	store, err := storeRepo.GetByID(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -88,13 +88,13 @@ func (s *storeService) GetByID(ctx context.Context, ID string) (*model.Store, er
 }
 
 func (s *storeService) Update(ctx context.Context, m model.UpdateStore, id string) (*model.Store, error) {
-	u := s.repo.Store()
+	storeRepo := s.repo.Store()
 
 	if err := uuid.Validate(id); err != nil {
 		return nil, err
 	}
 
-	store, err := u.Update(ctx, m, id)
+	store, err := storeRepo.Update(ctx, m, id)
 	if err != nil {
 		return nil, err
 	}

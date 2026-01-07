@@ -5,6 +5,7 @@ import (
 )
 
 type Service interface {
+	Auth() authService
 	User() userService
 	Store() storeService
 	Product() productService
@@ -23,6 +24,7 @@ func NewService(repo repository.Repository) Service {
 	}
 }
 
+func (s *service) Auth() authService       { return authService{repo: s.repo} }
 func (s *service) User() userService       { return userService{repo: s.repo} }
 func (s *service) Store() storeService     { return storeService{repo: s.repo} }
 func (s *service) Product() productService { return productService{repo: s.repo} }

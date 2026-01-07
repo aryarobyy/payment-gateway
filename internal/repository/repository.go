@@ -3,6 +3,7 @@ package repository
 import "gorm.io/gorm"
 
 type Repository interface {
+	Auth() authRepo
 	User() userRepo
 	Store() storeRepo
 	Product() productRepo
@@ -21,6 +22,7 @@ func NewRepository(db *gorm.DB) Repository {
 	}
 }
 
+func (r *repository) Auth() authRepo           { return authRepo{db: r.db} }
 func (r *repository) User() userRepo           { return userRepo{db: r.db} }
 func (r *repository) Store() storeRepo         { return storeRepo{db: r.db} }
 func (r *repository) Product() productRepo     { return productRepo{db: r.db} }

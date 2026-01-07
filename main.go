@@ -12,7 +12,7 @@ import (
 
 func main() {
 	if err := godotenv.Load(".env"); err != nil {
-		fmt.Errorf("ENV Load Erro:", err)
+		log.Println("Warning: .env file not found or could not be loaded")
 	}
 
 	application := app.NewApp()

@@ -127,10 +127,12 @@ func setupRoutes(router *gin.Engine, ctrl controller.Controller) {
 	})
 
 	routes.UserRoutes(router, ctrl)
+	routes.StoreRoutes(router, ctrl)
 	routes.ProductRoutes(router, ctrl)
 	routes.OrderRoutes(router, ctrl)
 	routes.OrderItemRoutes(router, ctrl)
 	routes.PaymentRoutes(router, ctrl)
+	routes.AuthRoutes(router, ctrl)
 }
 
 func (a *App) Run(addr string) error {
