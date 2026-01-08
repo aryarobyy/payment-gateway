@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"payment-gateway/internal/helper"
+	"payment-gateway/internal/helper/response"
 	"payment-gateway/internal/model"
 	"payment-gateway/internal/service"
 
@@ -14,13 +15,13 @@ type OrderController struct {
 	service service.Service
 }
 
-func NewOrderController(service service.Service) OrderController {
-	return OrderController{service: service}
+func NewOrderController(service service.Service) *OrderController {
+	return &OrderController{service: service}
 }
 
 func (h *OrderController) Create(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Order()
+	orderSrv := h.service.Order()
 
 	order := model.Order{}
 
@@ -29,7 +30,7 @@ func (h *OrderController) Create(c *gin.Context) {
 		return
 	}
 
-	if err := s.Create(ctx, order); err != nil {
+	if err := orderSrv.Create(ctx, order); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -39,7 +40,7 @@ func (h *OrderController) Create(c *gin.Context) {
 
 func (h *OrderController) GetMany(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Order()
+	orderSrv := h.service.Order()
 
 	limit, offset, err := helper.Pagination(c)
 	if err != nil {
@@ -47,23 +48,23 @@ func (h *OrderController) GetMany(c *gin.Context) {
 		return
 	}
 
-	orders, total, err := s.GetMany(ctx, limit, offset)
+	orders, total, err := orderSrv.GetMany(ctx, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  orders,
+		"data":  response.ToOrderResponseList(orders),
 		"total": total,
 	}, "Orders retrieved successfully")
 }
 
 func (h *OrderController) GetByStoreID(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Order()
+	orderSrv := h.service.Order()
 
-	storeID := c.Param("store_id")
+	storeID := c.Param("id")
 	if storeID == "" {
 		helper.Error(c, http.StatusBadRequest, "Store ID parameter is required")
 		return
@@ -75,21 +76,21 @@ func (h *OrderController) GetByStoreID(c *gin.Context) {
 		return
 	}
 
-	orders, total, err := s.GetByStoreID(ctx, storeID, limit, offset)
+	orders, total, err := orderSrv.GetByStoreID(ctx, storeID, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  orders,
+		"data":  response.ToOrderResponseList(orders),
 		"total": total,
 	}, "Orders retrieved successfully")
 }
 
 func (h *OrderController) GetByStatus(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Order()
+	orderSrv := h.service.Order()
 
 	statusStr := c.Param("status")
 	if statusStr == "" {
@@ -103,21 +104,21 @@ func (h *OrderController) GetByStatus(c *gin.Context) {
 		return
 	}
 
-	orders, total, err := s.GetByStatus(ctx, statusStr, limit, offset)
+	orders, total, err := orderSrv.GetByStatus(ctx, statusStr, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  orders,
+		"data":  response.ToOrderResponseList(orders),
 		"total": total,
 	}, "Orders retrieved successfully")
 }
 
 func (h *OrderController) GetByID(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Order()
+	orderSrv := h.service.Order()
 
 	id := c.Param("id")
 	if id == "" {
@@ -125,18 +126,18 @@ func (h *OrderController) GetByID(c *gin.Context) {
 		return
 	}
 
-	order, err := s.GetByID(ctx, id)
+	order, err := orderSrv.GetByID(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, order, "Order retrieved successfully")
+	helper.Success(c, response.ToOrderResponse(*order), "Order retrieved successfully")
 }
 
 func (h *OrderController) UpdateStatus(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Order()
+	orderSrv := h.service.Order()
 
 	orderID := c.Param("id")
 	if orderID == "" {
@@ -153,7 +154,7 @@ func (h *OrderController) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	if err := s.UpdateStatus(ctx, orderID, string(req.Status)); err != nil {
+	if err := orderSrv.UpdateStatus(ctx, orderID, string(req.Status)); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}

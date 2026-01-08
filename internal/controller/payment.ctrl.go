@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"payment-gateway/internal/helper"
+	"payment-gateway/internal/helper/response"
 	"payment-gateway/internal/model"
 	"payment-gateway/internal/service"
 
@@ -21,7 +22,7 @@ func NewPaymentControllerl(service service.Service) *PaymentController {
 
 func (h *PaymentController) Create(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Payment()
+	paymentSrv := h.service.Payment()
 
 	p := model.PostPayment{}
 
@@ -30,18 +31,18 @@ func (h *PaymentController) Create(c *gin.Context) {
 		return
 	}
 
-	payment, err := s.Create(ctx, p)
+	payment, err := paymentSrv.Create(ctx, p)
 	if err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	helper.Success(c, payment, "Payment created successfully")
+	helper.Success(c, response.ToPaymentResponse(*payment), "Payment created successfully")
 }
 
 func (h *PaymentController) GetMany(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Payment()
+	paymentSrv := h.service.Payment()
 
 	storeID := c.Query("store_id")
 	if storeID == "" {
@@ -55,21 +56,21 @@ func (h *PaymentController) GetMany(c *gin.Context) {
 		return
 	}
 
-	payments, total, err := s.GetMany(ctx, storeID, limit, offset)
+	payments, total, err := paymentSrv.GetMany(ctx, storeID, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  payments,
+		"data":  response.ToPaymentResponseList(payments),
 		"total": total,
 	}, "Payments retrieved successfully")
 }
 
 func (h *PaymentController) GetByID(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Payment()
+	paymentSrv := h.service.Payment()
 
 	id := c.Param("id")
 	if id == "" {
@@ -77,56 +78,56 @@ func (h *PaymentController) GetByID(c *gin.Context) {
 		return
 	}
 
-	payment, err := s.GetByID(ctx, id)
+	payment, err := paymentSrv.GetByID(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, payment, "Payment retrieved successfully")
+	helper.Success(c, response.ToPaymentResponse(*payment), "Payment retrieved successfully")
 }
 
 func (h *PaymentController) GetByOrderID(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Payment()
+	paymentSrv := h.service.Payment()
 
-	orderID := c.Param("order_id")
+	orderID := c.Param("id")
 	if orderID == "" {
 		helper.Error(c, http.StatusBadRequest, "Order ID parameter is required")
 		return
 	}
 
-	payment, err := s.GetByOrderID(ctx, orderID)
+	payment, err := paymentSrv.GetByOrderID(ctx, orderID)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, payment, "Payment retrieved successfully")
+	helper.Success(c, response.ToPaymentResponse(*payment), "Payment retrieved successfully")
 }
 
 func (h *PaymentController) GetByProviderRef(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Payment()
+	paymentSrv := h.service.Payment()
 
-	providerRef := c.Param("provider_ref")
+	providerRef := c.Param("ref")
 	if providerRef == "" {
 		helper.Error(c, http.StatusBadRequest, "Provider reference parameter is required")
 		return
 	}
 
-	payment, err := s.GetByProviderRef(ctx, providerRef)
+	payment, err := paymentSrv.GetByProviderRef(ctx, providerRef)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, payment, "Payment retrieved successfully")
+	helper.Success(c, response.ToPaymentResponse(*payment), "Payment retrieved successfully")
 }
 
 func (h *PaymentController) GetByStatus(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Payment()
+	paymentSrv := h.service.Payment()
 
 	statusStr := c.Param("status")
 	if statusStr == "" {
@@ -140,21 +141,21 @@ func (h *PaymentController) GetByStatus(c *gin.Context) {
 		return
 	}
 
-	payments, total, err := s.GetByStatus(ctx, statusStr, limit, offset)
+	payments, total, err := paymentSrv.GetByStatus(ctx, statusStr, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  payments,
+		"data":  response.ToPaymentResponseList(payments),
 		"total": total,
 	}, "Payments retrieved successfully")
 }
 
 func (h *PaymentController) UpdateStatus(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Payment()
+	paymentSrv := h.service.Payment()
 
 	paymentID := c.Param("id")
 	if paymentID == "" {
@@ -171,7 +172,7 @@ func (h *PaymentController) UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	if err := s.UpdateStatus(ctx, paymentID, req.Status); err != nil {
+	if err := paymentSrv.UpdateStatus(ctx, paymentID, req.Status); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -181,7 +182,7 @@ func (h *PaymentController) UpdateStatus(c *gin.Context) {
 
 func (h *PaymentController) UpdateVerification(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Payment()
+	paymentSrv := h.service.Payment()
 
 	paymentID := c.Param("id")
 	if paymentID == "" {
@@ -198,7 +199,7 @@ func (h *PaymentController) UpdateVerification(c *gin.Context) {
 		return
 	}
 
-	if err := s.UpdateVerification(ctx, paymentID, req.VerifiedAt); err != nil {
+	if err := paymentSrv.UpdateVerification(ctx, paymentID, req.VerifiedAt); err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}

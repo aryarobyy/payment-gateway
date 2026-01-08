@@ -13,6 +13,7 @@ func OrderItemRoutes(r *gin.Engine, ctrl controller.Controller) {
 		routes.POST("/", orderItem.Create)
 		routes.POST("/batch", orderItem.CreateBatch)
 		routes.GET("/:id", orderItem.GetByID)
-		routes.GET("/order/:order_id", orderItem.GetMany)
+		routes.GET("/order/:id", orderItem.GetMany)
 	}
 }
+

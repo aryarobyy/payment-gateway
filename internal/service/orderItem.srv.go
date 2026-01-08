@@ -31,15 +31,15 @@ func NewOrderItemService(
 }
 
 func (s *orderItemService) Create(ctx context.Context, m model.OrderItem) error {
-	u := s.repo.OrderItem()
-	p := s.repo.Product()
+	orderRepo := s.repo.OrderItem()
+	productRepo := s.repo.Product()
 	m.ID = uuid.NewString()
 
-	if _, err := p.GetByID(ctx, m.ProductID); err != nil {
+	if _, err := productRepo.GetByID(ctx, m.ProductID); err != nil {
 		return err
 	}
 
-	price, err := p.GetPrice(ctx, m.ProductID)
+	price, err := productRepo.GetPrice(ctx, m.ProductID)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (s *orderItemService) Create(ctx context.Context, m model.OrderItem) error 
 	m.Price = price
 	m.Subtotal = m.Price * float64(m.Quantity)
 
-	if err := u.Create(ctx, m); err != nil {
+	if err := orderRepo.Create(ctx, m); err != nil {
 		return err
 	}
 
@@ -82,8 +82,8 @@ func (s *orderItemService) CreateBatch(ctx context.Context, items []model.OrderI
 }
 
 func (s *orderItemService) GetMany(ctx context.Context, orderID string) ([]model.OrderItem, error) {
-	u := s.repo.OrderItem()
-	orderItems, err := u.GetMany(ctx, orderID)
+	orderRepo := s.repo.OrderItem()
+	orderItems, err := orderRepo.GetMany(ctx, orderID)
 	if err != nil {
 		return nil, err
 	}
@@ -92,13 +92,13 @@ func (s *orderItemService) GetMany(ctx context.Context, orderID string) ([]model
 }
 
 func (s *orderItemService) GetByID(ctx context.Context, ID string) (*model.OrderItem, error) {
-	u := s.repo.OrderItem()
+	orderRepo := s.repo.OrderItem()
 
 	if err := uuid.Validate(ID); err != nil {
 		return nil, err
 	}
 
-	orderItem, err := u.GetByID(ctx, ID)
+	orderItem, err := orderRepo.GetByID(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -118,4 +118,3 @@ func (s *orderItemService) GetByID(ctx context.Context, ID string) (*model.Order
 // 	return totalPrice, nil
 // }
 //
-

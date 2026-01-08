@@ -33,7 +33,7 @@ func NewPaymentService(repo repository.Repository) PaymentService {
 }
 
 func (s *paymentService) Create(ctx context.Context, m model.PostPayment) (*model.Payment, error) {
-	u := s.repo.Payment()
+	paymentRepo := s.repo.Payment()
 
 	if err := helper.EmptyCheck(map[string]string{
 		"order_id": m.OrderID,
@@ -62,7 +62,7 @@ func (s *paymentService) Create(ctx context.Context, m model.PostPayment) (*mode
 		RawPayload:  m.RawPayload,
 	}
 
-	if err := u.Create(ctx, payment); err != nil {
+	if err := paymentRepo.Create(ctx, payment); err != nil {
 		return nil, fmt.Errorf("failed to create payment: %w", err)
 	}
 
@@ -70,13 +70,13 @@ func (s *paymentService) Create(ctx context.Context, m model.PostPayment) (*mode
 }
 
 func (s *paymentService) GetMany(ctx context.Context, storeID string, limit int, offset int) ([]model.Payment, int64, error) {
-	u := s.repo.Payment()
+	paymentRepo := s.repo.Payment()
 
 	if storeID == "" {
 		return nil, 0, fmt.Errorf("store id is empty")
 	}
 
-	payments, total, err := u.GetMany(ctx, storeID, limit, offset)
+	payments, total, err := paymentRepo.GetMany(ctx, storeID, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get payments by status: %w", err)
 	}
@@ -85,8 +85,8 @@ func (s *paymentService) GetMany(ctx context.Context, storeID string, limit int,
 }
 
 func (s *paymentService) GetByID(ctx context.Context, id string) (*model.Payment, error) {
-	u := s.repo.Payment()
-	payment, err := u.GetByID(ctx, id)
+	paymentRepo := s.repo.Payment()
+	payment, err := paymentRepo.GetByID(ctx, id)
 
 	if id == "" {
 		return nil, fmt.Errorf("id is empty")
@@ -100,8 +100,8 @@ func (s *paymentService) GetByID(ctx context.Context, id string) (*model.Payment
 }
 
 func (s *paymentService) GetByOrderID(ctx context.Context, orderID string) (*model.Payment, error) {
-	u := s.repo.Payment()
-	payment, err := u.GetByOrderID(ctx, orderID)
+	paymentRepo := s.repo.Payment()
+	payment, err := paymentRepo.GetByOrderID(ctx, orderID)
 
 	if orderID == "" {
 		return nil, fmt.Errorf("order id is empty")
@@ -115,8 +115,8 @@ func (s *paymentService) GetByOrderID(ctx context.Context, orderID string) (*mod
 }
 
 func (s *paymentService) GetByProviderRef(ctx context.Context, providerRef string) (*model.Payment, error) {
-	u := s.repo.Payment()
-	payment, err := u.GetByProviderRef(ctx, providerRef)
+	paymentRepo := s.repo.Payment()
+	payment, err := paymentRepo.GetByProviderRef(ctx, providerRef)
 
 	if providerRef == "" {
 		return nil, fmt.Errorf("store id is empty")
@@ -130,7 +130,7 @@ func (s *paymentService) GetByProviderRef(ctx context.Context, providerRef strin
 }
 
 func (s *paymentService) GetByStatus(ctx context.Context, status string, limit int, offset int) ([]model.Payment, int64, error) {
-	u := s.repo.Payment()
+	paymentRepo := s.repo.Payment()
 
 	// Convert status string to enum
 	var statusEnum model.Status
@@ -149,7 +149,7 @@ func (s *paymentService) GetByStatus(ctx context.Context, status string, limit i
 		return nil, 0, fmt.Errorf("invalid status: %s", status)
 	}
 
-	payments, total, err := u.GetByStatus(ctx, statusEnum, limit, offset)
+	payments, total, err := paymentRepo.GetByStatus(ctx, statusEnum, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get payments by status: %w", err)
 	}
@@ -158,7 +158,7 @@ func (s *paymentService) GetByStatus(ctx context.Context, status string, limit i
 }
 
 func (s *paymentService) UpdateStatus(ctx context.Context, paymentID string, status string) error {
-	u := s.repo.Payment()
+	paymentRepo := s.repo.Payment()
 
 	if paymentID == "" {
 		return fmt.Errorf("payment id is empty")
@@ -181,7 +181,7 @@ func (s *paymentService) UpdateStatus(ctx context.Context, paymentID string, sta
 		return fmt.Errorf("invalid status: %s", status)
 	}
 
-	if err := u.UpdateStatus(ctx, paymentID, statusEnum); err != nil {
+	if err := paymentRepo.UpdateStatus(ctx, paymentID, statusEnum); err != nil {
 		return fmt.Errorf("failed to update payment status: %w", err)
 	}
 
@@ -189,7 +189,7 @@ func (s *paymentService) UpdateStatus(ctx context.Context, paymentID string, sta
 }
 
 func (s *paymentService) UpdateVerification(ctx context.Context, paymentID string, verifiedAt time.Time) error {
-	u := s.repo.Payment()
+	paymentRepo := s.repo.Payment()
 
 	if paymentID == "" {
 		return fmt.Errorf("payment id is empty")
@@ -199,7 +199,7 @@ func (s *paymentService) UpdateVerification(ctx context.Context, paymentID strin
 		return fmt.Errorf("verified at is empty")
 	}
 
-	payment, err := u.GetByID(ctx, paymentID)
+	payment, err := paymentRepo.GetByID(ctx, paymentID)
 	if err != nil {
 		return fmt.Errorf("payment not found: %w", err)
 	}
@@ -208,7 +208,7 @@ func (s *paymentService) UpdateVerification(ctx context.Context, paymentID strin
 		return errors.New("only pending or paid payments can be verified")
 	}
 
-	if err := u.UpdateVerification(ctx, paymentID, verifiedAt); err != nil {
+	if err := paymentRepo.UpdateVerification(ctx, paymentID, verifiedAt); err != nil {
 		return fmt.Errorf("failed to update payment verification: %w", err)
 	}
 

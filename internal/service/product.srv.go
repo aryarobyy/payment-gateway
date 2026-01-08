@@ -30,7 +30,7 @@ func NewProductService(repo repository.Repository) ProductService {
 }
 
 func (s *productService) Create(ctx context.Context, m model.PostProduct) error {
-	u := s.repo.Product()
+	productRepo := s.repo.Product()
 	m.ID = uuid.NewString()
 	if m.Price <= 0 {
 		return fmt.Errorf("invalid price for product %s", m.Name)
@@ -52,7 +52,7 @@ func (s *productService) Create(ctx context.Context, m model.PostProduct) error 
 		Category: m.Category,
 	}
 
-	if err := u.Create(ctx, product); err != nil {
+	if err := productRepo.Create(ctx, product); err != nil {
 		return err
 	}
 
@@ -81,8 +81,8 @@ func (s *productService) CreateBatch(ctx context.Context, products []model.Produ
 }
 
 func (s *productService) GetMany(ctx context.Context, storeID string, limit int, offset int) ([]model.Product, int64, error) {
-	u := s.repo.Product()
-	products, total, err := u.GetMany(ctx, storeID, limit, offset)
+	productRepo := s.repo.Product()
+	products, total, err := productRepo.GetMany(ctx, storeID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -91,8 +91,8 @@ func (s *productService) GetMany(ctx context.Context, storeID string, limit int,
 }
 
 func (s *productService) GetByCategory(ctx context.Context, category string, limit int, offset int) ([]model.Product, int64, error) {
-	u := s.repo.Product()
-	products, total, err := u.GetByCategory(ctx, category, limit, offset)
+	productRepo := s.repo.Product()
+	products, total, err := productRepo.GetByCategory(ctx, category, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -101,13 +101,13 @@ func (s *productService) GetByCategory(ctx context.Context, category string, lim
 }
 
 func (s *productService) GetByID(ctx context.Context, ID string) (*model.Product, error) {
-	u := s.repo.Product()
+	productRepo := s.repo.Product()
 
 	if err := uuid.Validate(ID); err != nil {
 		return nil, err
 	}
 
-	product, err := u.GetByID(ctx, ID)
+	product, err := productRepo.GetByID(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (s *productService) GetByID(ctx context.Context, ID string) (*model.Product
 }
 
 func (s *productService) GetByActive(ctx context.Context, isActive string, limit int, offset int) ([]model.Product, int64, error) {
-	u := s.repo.Product()
+	productRepo := s.repo.Product()
 
 	var isActiveBool bool
 	switch isActive {
@@ -128,7 +128,7 @@ func (s *productService) GetByActive(ctx context.Context, isActive string, limit
 		return nil, 0, fmt.Errorf("invalid isActive value: %s. Use true/false, 1/0, or yes/no", isActive)
 	}
 
-	products, total, err := u.GetByActive(ctx, isActiveBool, limit, offset)
+	products, total, err := productRepo.GetByActive(ctx, isActiveBool, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -137,13 +137,13 @@ func (s *productService) GetByActive(ctx context.Context, isActive string, limit
 }
 
 func (s *productService) Update(ctx context.Context, m model.UpdateProduct, id string) (*model.Product, error) {
-	u := s.repo.Product()
+	productRepo := s.repo.Product()
 
 	if err := uuid.Validate(id); err != nil {
 		return nil, err
 	}
 
-	product, err := u.Update(ctx, m, id)
+	product, err := productRepo.Update(ctx, m, id)
 	if err != nil {
 		return nil, err
 	}

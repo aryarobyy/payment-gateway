@@ -35,11 +35,11 @@ func NewOrderService(
 func (s *orderService) Create(ctx context.Context, m model.Order) error {
 	var totalPrice float64
 
-	u := s.repo.Order()
-	i := s.repo.OrderItem()
+	orderRepo := s.repo.Order()
+	itemRepo := s.repo.OrderItem()
 	m.ID = uuid.NewString()
 
-	items, err := i.GetMany(ctx, m.ID)
+	items, err := itemRepo.GetMany(ctx, m.ID)
 	if err != nil {
 		return err
 	}
@@ -56,7 +56,7 @@ func (s *orderService) Create(ctx context.Context, m model.Order) error {
 		return err
 	}
 
-	if err := u.Create(ctx, m); err != nil {
+	if err := orderRepo.Create(ctx, m); err != nil {
 		return err
 	}
 
@@ -64,8 +64,8 @@ func (s *orderService) Create(ctx context.Context, m model.Order) error {
 }
 
 func (s *orderService) GetMany(ctx context.Context, limit int, offset int) ([]model.Order, int64, error) {
-	u := s.repo.Order()
-	orders, total, err := u.GetMany(ctx, limit, offset)
+	orderRepo := s.repo.Order()
+	orders, total, err := orderRepo.GetMany(ctx, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -74,8 +74,8 @@ func (s *orderService) GetMany(ctx context.Context, limit int, offset int) ([]mo
 }
 
 func (s *orderService) GetByStoreID(ctx context.Context, storeID string, limit int, offset int) ([]model.Order, int64, error) {
-	u := s.repo.Order()
-	orders, total, err := u.GetByStoreID(ctx, storeID, limit, offset)
+	orderRepo := s.repo.Order()
+	orders, total, err := orderRepo.GetByStoreID(ctx, storeID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -84,7 +84,7 @@ func (s *orderService) GetByStoreID(ctx context.Context, storeID string, limit i
 }
 
 func (s *orderService) GetByStatus(ctx context.Context, status string, limit int, offset int) ([]model.Order, int64, error) {
-	u := s.repo.Order()
+	orderRepo := s.repo.Order()
 
 	var statusEnum model.Status
 	switch status {
@@ -102,7 +102,7 @@ func (s *orderService) GetByStatus(ctx context.Context, status string, limit int
 		return nil, 0, fmt.Errorf("invalid status: %s", status)
 	}
 
-	orders, total, err := u.GetByStatus(ctx, statusEnum, limit, offset)
+	orders, total, err := orderRepo.GetByStatus(ctx, statusEnum, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -111,13 +111,13 @@ func (s *orderService) GetByStatus(ctx context.Context, status string, limit int
 }
 
 func (s *orderService) GetByID(ctx context.Context, ID string) (*model.Order, error) {
-	u := s.repo.Order()
+	orderRepo := s.repo.Order()
 
 	if err := uuid.Validate(ID); err != nil {
 		return nil, err
 	}
 
-	order, err := u.GetByID(ctx, ID)
+	order, err := orderRepo.GetByID(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +126,7 @@ func (s *orderService) GetByID(ctx context.Context, ID string) (*model.Order, er
 }
 
 func (s *orderService) UpdateStatus(ctx context.Context, orderID string, status string) error {
-	u := s.repo.Order()
+	orderRepo := s.repo.Order()
 
 	if err := uuid.Validate(orderID); err != nil {
 		return err
@@ -149,7 +149,7 @@ func (s *orderService) UpdateStatus(ctx context.Context, orderID string, status 
 		return fmt.Errorf("invalid status: %s", status)
 	}
 
-	if err := u.UpdateStatus(ctx, orderID, statusEnum); err != nil {
+	if err := orderRepo.UpdateStatus(ctx, orderID, statusEnum); err != nil {
 		return err
 	}
 

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"payment-gateway/internal/helper"
+	"payment-gateway/internal/helper/response"
 	"payment-gateway/internal/model"
 	"payment-gateway/internal/service"
 
@@ -14,13 +15,13 @@ type ProductController struct {
 	service service.Service
 }
 
-func NewProductController(service service.Service) ProductController {
-	return ProductController{service: service}
+func NewProductController(service service.Service) *ProductController {
+	return &ProductController{service: service}
 }
 
 func (h *ProductController) Create(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Product()
+	productSrv := h.service.Product()
 
 	p := model.PostProduct{}
 
@@ -29,7 +30,7 @@ func (h *ProductController) Create(c *gin.Context) {
 		return
 	}
 
-	if err := s.Create(ctx, p); err != nil {
+	if err := productSrv.Create(ctx, p); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -39,7 +40,7 @@ func (h *ProductController) Create(c *gin.Context) {
 
 func (h *ProductController) GetMany(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Product()
+	productSrv := h.service.Product()
 
 	storeID := c.Query("store_id")
 
@@ -49,21 +50,21 @@ func (h *ProductController) GetMany(c *gin.Context) {
 		return
 	}
 
-	products, total, err := s.GetMany(ctx, storeID, limit, offset)
+	products, total, err := productSrv.GetMany(ctx, storeID, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  products,
+		"data":  response.ToProductResponseList(products),
 		"total": total,
 	}, "Products retrieved successfully")
 }
 
 func (h *ProductController) GetByCategory(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Product()
+	productSrv := h.service.Product()
 
 	category := c.Param("category")
 	if category == "" {
@@ -77,21 +78,21 @@ func (h *ProductController) GetByCategory(c *gin.Context) {
 		return
 	}
 
-	products, total, err := s.GetByCategory(ctx, category, limit, offset)
+	products, total, err := productSrv.GetByCategory(ctx, category, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  products,
+		"data":  response.ToProductResponseList(products),
 		"total": total,
 	}, "Products retrieved successfully")
 }
 
 func (h *ProductController) GetByID(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Product()
+	productSrv := h.service.Product()
 
 	id := c.Param("id")
 	if id == "" {
@@ -99,18 +100,18 @@ func (h *ProductController) GetByID(c *gin.Context) {
 		return
 	}
 
-	product, err := s.GetByID(ctx, id)
+	product, err := productSrv.GetByID(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, product, "Product retrieved successfully")
+	helper.Success(c, response.ToProductResponse(*product), "Product retrieved successfully")
 }
 
 func (h *ProductController) GetByActive(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Product()
+	productSrv := h.service.Product()
 
 	isActiveStr := c.Param("is_active")
 	if isActiveStr == "" {
@@ -124,21 +125,21 @@ func (h *ProductController) GetByActive(c *gin.Context) {
 		return
 	}
 
-	products, total, err := s.GetByActive(ctx, isActiveStr, limit, offset)
+	products, total, err := productSrv.GetByActive(ctx, isActiveStr, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  products,
+		"data":  response.ToProductResponseList(products),
 		"total": total,
 	}, "Products retrieved successfully")
 }
 
 func (h *ProductController) Update(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.Product()
+	productSrv := h.service.Product()
 
 	id := c.Param("id")
 	if id == "" {
@@ -153,11 +154,11 @@ func (h *ProductController) Update(c *gin.Context) {
 		return
 	}
 
-	product, err := s.Update(ctx, updateProduct, id)
+	product, err := productSrv.Update(ctx, updateProduct, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, product, "Product updated successfully")
+	helper.Success(c, response.ToProductResponse(*product), "Product updated successfully")
 }

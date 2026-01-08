@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"payment-gateway/internal/helper"
+	"payment-gateway/internal/helper/response"
 	"payment-gateway/internal/model"
 	"payment-gateway/internal/service"
 
@@ -14,13 +15,13 @@ type OrderItemController struct {
 	service service.Service
 }
 
-func NewOrderItemController(service service.Service) OrderItemController {
-	return OrderItemController{service: service}
+func NewOrderItemController(service service.Service) *OrderItemController {
+	return &OrderItemController{service: service}
 }
 
 func (h *OrderItemController) Create(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.OrderItem()
+	itemSrv := h.service.OrderItem()
 
 	orderItem := model.OrderItem{}
 
@@ -29,7 +30,7 @@ func (h *OrderItemController) Create(c *gin.Context) {
 		return
 	}
 
-	if err := s.Create(ctx, orderItem); err != nil {
+	if err := itemSrv.Create(ctx, orderItem); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -39,7 +40,7 @@ func (h *OrderItemController) Create(c *gin.Context) {
 
 func (h *OrderItemController) CreateBatch(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.OrderItem()
+	itemSrv := h.service.OrderItem()
 
 	var orderItems []model.OrderItem
 
@@ -48,7 +49,7 @@ func (h *OrderItemController) CreateBatch(c *gin.Context) {
 		return
 	}
 
-	if err := s.CreateBatch(ctx, orderItems); err != nil {
+	if err := itemSrv.CreateBatch(ctx, orderItems); err != nil {
 		helper.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -58,26 +59,26 @@ func (h *OrderItemController) CreateBatch(c *gin.Context) {
 
 func (h *OrderItemController) GetMany(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.OrderItem()
+	itemSrv := h.service.OrderItem()
 
-	orderID := c.Param("order_id")
+	orderID := c.Param("id")
 	if orderID == "" {
 		helper.Error(c, http.StatusBadRequest, "Order ID parameter is required")
 		return
 	}
 
-	orderItems, err := s.GetMany(ctx, orderID)
+	orderItems, err := itemSrv.GetMany(ctx, orderID)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, orderItems, "Order items retrieved successfully")
+	helper.Success(c, response.ToOrderItemResponseList(orderItems), "Order items retrieved successfully")
 }
 
 func (h *OrderItemController) GetByID(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.OrderItem()
+	itemSrv := h.service.OrderItem()
 
 	id := c.Param("id")
 	if id == "" {
@@ -85,11 +86,11 @@ func (h *OrderItemController) GetByID(c *gin.Context) {
 		return
 	}
 
-	orderItem, err := s.GetByID(ctx, id)
+	orderItem, err := itemSrv.GetByID(ctx, id)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, orderItem, "Order item retrieved successfully")
+	helper.Success(c, response.ToOrderItemResponse(*orderItem), "Order item retrieved successfully")
 }
