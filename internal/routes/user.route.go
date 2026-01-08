@@ -10,8 +10,6 @@ func UserRoutes(r *gin.Engine, u controller.Controller) {
 	routes := r.Group("/user")
 	user := u.User()
 	{
-		routes.POST("/", user.Register)
-		routes.POST("/login", user.Login)
 		routes.GET("/", user.GetMany)
 		routes.GET("/:id", user.GetByID)
 		routes.GET("/username/:username", user.GetByUsername)

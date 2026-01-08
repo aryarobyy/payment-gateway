@@ -1,13 +1,16 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 
 	"payment-gateway/internal/helper"
-	"payment-gateway/internal/model"
+	"payment-gateway/internal/helper/response"
 	"payment-gateway/internal/service"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type UserController struct {
@@ -18,48 +21,9 @@ func NewUserController(s service.Service) *UserController {
 	return &UserController{service: s}
 }
 
-func (h *UserController) Register(c *gin.Context) {
-	ctx := c.Request.Context()
-	s := h.service.User()
-
-	user := model.RegisterCredential{}
-
-	if err := c.ShouldBindJSON(&user); err != nil {
-		helper.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	if err := s.Register(ctx, user); err != nil {
-		helper.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	helper.Success(c, nil, "User registered successfully")
-}
-
-func (h *UserController) Login(c *gin.Context) {
-	ctx := c.Request.Context()
-	s := h.service.User()
-
-	user := model.LoginCredential{}
-
-	if err := c.ShouldBindJSON(&user); err != nil {
-		helper.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	res, _, err := s.Login(ctx, user) // token disable dlu
-	if err != nil {
-		helper.Error(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	helper.Success(c, res, "User login successfully")
-}
-
 func (h *UserController) GetMany(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.User()
+	authSrv := h.service.User()
 
 	limit, offset, err := helper.Pagination(c)
 	if err != nil {
@@ -67,21 +31,21 @@ func (h *UserController) GetMany(c *gin.Context) {
 		return
 	}
 
-	users, total, err := s.GetMany(ctx, limit, offset)
+	users, total, err := authSrv.GetMany(ctx, limit, offset)
 	if err != nil {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  users,
+		"data":  response.ToUserResponseList(users),
 		"total": total,
 	}, "Users retrieved successfully")
 }
 
 func (h *UserController) GetByRole(c *gin.Context) {
 	ctx := c.Request.Context()
-	s := h.service.User()
+	authSrv := h.service.User()
 
 	role := c.Param("role")
 	if role == "" {
@@ -94,14 +58,18 @@ func (h *UserController) GetByRole(c *gin.Context) {
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	users, total, err := s.GetByRole(ctx, role, limit, offset)
+	users, total, err := authSrv.GetByRole(ctx, role, limit, offset)
 	if err != nil {
+		if strings.Contains(err.Error(), "invalid role") {
+			helper.Error(c, http.StatusBadRequest, err.Error())
+			return
+		}
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	helper.Success(c, gin.H{
-		"data":  users,
+		"data":  response.ToUserResponseList(users),
 		"total": total,
 	}, "Users retrieved successfully")
 }
@@ -118,11 +86,19 @@ func (h *UserController) GetByID(c *gin.Context) {
 
 	user, err := s.GetByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			helper.Error(c, http.StatusNotFound, "User not found")
+			return
+		}
+		if strings.Contains(err.Error(), "invalid UUID") {
+			helper.Error(c, http.StatusBadRequest, err.Error())
+			return
+		}
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, user, "User retrieved successfully")
+	helper.Success(c, response.ToUserResponse(*user), "User retrieved successfully")
 }
 
 func (h *UserController) GetByUsername(c *gin.Context) {
@@ -137,9 +113,13 @@ func (h *UserController) GetByUsername(c *gin.Context) {
 
 	user, err := s.GetByUsername(ctx, username)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			helper.Error(c, http.StatusNotFound, "User not found")
+			return
+		}
 		helper.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	helper.Success(c, user, "User retrieved successfully")
+	helper.Success(c, response.ToUserResponse(*user), "User retrieved successfully")
 }

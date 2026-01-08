@@ -9,11 +9,9 @@ import (
 )
 
 type UserRepo interface {
-	Create(ctx context.Context, m model.User) error
 	GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error)
 	GetByRole(ctx context.Context, role model.Role, limit int, offset int) ([]model.User, int64, error)
 	GetByID(ctx context.Context, ID string) (*model.User, error)
-	GetByEmail(ctx context.Context, email string) (*model.User, error)
 	GetByUsername(ctx context.Context, username string) (*model.User, error)
 }
 
@@ -25,20 +23,15 @@ func NewUserRepo(db *gorm.DB) UserRepo {
 	return &userRepo{db: db}
 }
 
-func (r *userRepo) Create(ctx context.Context, m model.User) error {
-	return r.db.WithContext(ctx).
-		Create(&m).
-		Error
-}
-
 func (r *userRepo) GetMany(ctx context.Context, limit int, offset int) ([]model.User, int64, error) {
 	var (
 		total int64
-		m     []model.User
+		m     = make([]model.User, 0)
 	)
 
 	query := r.db.WithContext(ctx).
-		Model([]model.User{})
+		Model([]model.User{}).
+		Order("created_at DESC")
 
 	if err := query.
 		Count(&total).
@@ -71,11 +64,12 @@ func (r *userRepo) GetByID(ctx context.Context, ID string) (*model.User, error) 
 func (r *userRepo) GetByRole(ctx context.Context, role model.Role, limit int, offset int) ([]model.User, int64, error) {
 	var (
 		total int64
-		m     []model.User
+		m     = make([]model.User, 0)
 	)
 
 	query := r.db.WithContext(ctx).
 		Model([]model.User{}).
+		Order("created_at DESC").
 		Where("role = ?", role)
 
 	if err := query.
@@ -93,21 +87,6 @@ func (r *userRepo) GetByRole(ctx context.Context, role model.Role, limit int, of
 	}
 
 	return m, total, nil
-}
-
-func (r *userRepo) GetByEmail(ctx context.Context, email string) (*model.User, error) {
-	m := model.User{}
-	query := r.db.WithContext(ctx).
-		Model(model.User{}).
-		Where("email = ?", email)
-
-	if err := query.
-		First(&m, email).
-		Error; err != nil {
-		return nil, err
-	}
-
-	return &m, nil
 }
 
 func (r *userRepo) GetByUsername(ctx context.Context, username string) (*model.User, error) {

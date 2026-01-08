@@ -6,7 +6,7 @@ type User struct {
 	ID        string    `gorm:"type:char(36);primaryKey"`
 	Username  string    `json:"username" validate:"required" gorm:"unique"`
 	Email     string    `json:"email" gorm:"unique"`
-	Password  string    `json:"password" validate:"required"`
+	Password  string    `json:"-" validate:"required"`
 	Role      Role      `json:"role" validate:"required"`
 	LastLogin time.Time `json:"last_login" validate:"required"`
 
@@ -27,7 +27,7 @@ type LoginCredential struct {
 }
 
 type PasswordUpdate struct {
-	UserID      uint   `json:"-"`
+	UserID      string `json:"-"`
 	OldPassword string `json:"old_password" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required,min=6"`
 }
