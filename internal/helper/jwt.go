@@ -10,6 +10,7 @@ import (
 
 	"payment-gateway/internal/model"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -80,7 +81,7 @@ func GenerateAccessToken(user *model.User) (string, error) {
 	return ss, nil
 }
 
-func GenerateRefreshToken(user *model.User) (string, error) {
+func GenerateRefreshToken(c *gin.Context, user *model.User) (string, error) {
 	secret := os.Getenv("JWT_REFRESH_SECRET")
 	if secret == "" {
 		secret = os.Getenv("JWT_SECRET")
@@ -109,11 +110,22 @@ func GenerateRefreshToken(user *model.User) (string, error) {
 		return "", err
 	}
 
+	c.SetCookie(
+		"token",
+		ss,
+		int(duration.Seconds()),
+		"/",
+		"",
+		false,
+		true,
+	)
+
 	return ss, nil
 }
 
 func ParseAndValidateToken(tokenString string) (*model.ClaimsModel, error) {
 	secret := os.Getenv("JWT_SECRET")
+
 	token, err := jwt.ParseWithClaims(tokenString, &model.ClaimsModel{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
@@ -129,35 +141,35 @@ func ParseAndValidateToken(tokenString string) (*model.ClaimsModel, error) {
 	return claims, nil
 }
 
-func ValidateRefreshToken(tokenStr string) (int, error) {
+func ValidateRefreshToken(c *gin.Context) (string, error) {
 	secret := os.Getenv("JWT_REFRESH_SECRET")
 	if secret == "" {
 		secret = os.Getenv("JWT_SECRET")
 	}
 
-	token, err := jwt.ParseWithClaims(tokenStr, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
+	tokenString, err := c.Cookie("token")
+	if err != nil {
+		return "", err
+	}
+
+	token, err := jwt.ParseWithClaims(tokenString, &jwt.RegisteredClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Method.Alg())
 		}
 		return []byte(secret), nil
 	})
 	if err != nil {
-		return 0, fmt.Errorf("error parsing refresh token: %w", err)
+		return "", fmt.Errorf("error parsing refresh token: %w", err)
 	}
 
 	claims, ok := token.Claims.(*jwt.RegisteredClaims)
 	if !ok || !token.Valid {
-		return 0, errors.New("invalid or expired refresh token")
+		return "", errors.New("invalid or expired refresh token")
 	}
 
 	if claims.Subject == "" {
-		return 0, errors.New("missing subject in refresh token")
+		return "", errors.New("missing subject in refresh token")
 	}
 
-	id, err := strconv.Atoi(claims.Subject)
-	if err != nil {
-		return 0, fmt.Errorf("invalid subject format: %w", err)
-	}
-
-	return id, nil
+	return claims.Subject, nil
 }

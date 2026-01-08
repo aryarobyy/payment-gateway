@@ -1,51 +1,69 @@
 package middleware
 
-//
-// import (
-// 	"fmt"
-// 	"net/http"
-// 	"strings"
-//
-// 	"github.com/gin-gonic/gin"
-// )
-//
-// type AuthMiddleware struct {
-// 	// Add any dependencies needed for authentication
-// 	// e.g., JWT secret, user repository, etc.
-// }
-//
-// func NewAuthMiddleware() *AuthMiddleware {
-// 	return &AuthMiddleware{}
-// }
-//
-// func (m *AuthMiddleware) JWTAuth() gin.HandlerFunc {
-// 	return func(c *gin.Context) {
-// 		authHeader := c.GetHeader("Authorization")
-// 		if authHeader == "" {
-// 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
-// 			c.Abort()
-// 			return
-// 		}
-//
-// 		// Check if the header has the correct format "Bearer {token}"
-// 		parts := strings.Split(authHeader, " ")
-// 		if len(parts) != 2 || parts[0] != "Bearer" {
-// 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
-// 			c.Abort()
-// 			return
-// 		}
-//
-// 		tokenString := parts[1]
-//
-// 		// Here you would normally validate the JWT token
-// 		// For now, I'll simulate a successful validation and set a user ID
-// 		// In a real implementation, you would extract the user ID from the token
-// 		userID := uint(1) // This would come from the token in a real implementation
-//
-// 		// Set the user ID in the context for use in handlers
-// 		c.Set("user_id", userID)
-//
-// 		// Continue to the next handler
-// 		c.Next()
-// 	}
-// }
+import (
+	"net/http"
+	"strings"
+
+	"payment-gateway/internal/helper"
+	"payment-gateway/internal/model"
+
+	"github.com/gin-gonic/gin"
+)
+
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
+			return
+		}
+
+		tokenString := strings.Split(authHeader, " ")[1]
+		claims, err := helper.ParseAndValidateToken(tokenString)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid or expired token"})
+			return
+		}
+
+		c.Set("user", claims)
+		c.Set("role", claims.Role)
+		c.Next()
+	}
+}
+
+func RoleCheck(role ...model.Role) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		val, exists := c.Get("role")
+
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized: role info missing"})
+			return
+		}
+
+		userRole, ok := val.(string)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "system error: invalid role type"})
+			return
+		}
+
+		allowed := false
+		for _, r := range role {
+			if strings.EqualFold(string(r), userRole) {
+				allowed = true
+				break
+			}
+		}
+
+		if !allowed {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden: insufficient permissions"})
+			return
+		}
+
+		c.Next()
+	}
+}
